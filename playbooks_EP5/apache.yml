@@ -1,0 +1,39 @@
+---
+- name: Intall Apache.
+  hosts: centos
+  become: true
+
+  vars_files:
+    - vars/main.yml
+
+  handlers:
+    # the name of handler should be with lower case chars
+    - name: restart apache
+      service:
+        name: httpd
+        state: restarted
+
+  tasks:
+    - name: Download a file.
+      get_url:
+        src: http://ipv4.download.thinkbroadband.com/20MB.zip
+        dest: /tmp
+
+    - name: Ensure Apache is installed
+      yum:
+        name: httpd
+        state: present
+
+    - name: Copy test config file.
+      copy:
+        src: files/test.conf
+        dest: /etc/httpd/conf.d/test.conf
+      # use `restart apache` handler
+      notify: 
+        - restart apache
+
+    - name: Ensure Apache is running and starts at boot.
+      service:
+        name: httpd
+        state: started
+        enabled: true

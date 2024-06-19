@@ -1,0 +1,63 @@
+---
+- name: Install Apache.
+  hosts: all
+  become: true
+
+  handlers:
+    - name: restart apache
+      service:
+        name: "{{ apache_service }}"
+        state: restarted
+
+  pre_tasks:
+    - name: Debug OS Family
+      debug:
+        # ansible_os_family can be taken with `ansible -i inventory centos -m setup`
+        var: ansible_os_family
+
+    - name: Load variable files
+      include_vars: "{{ item }}"
+      with_first_found:
+        - "vars/apache_{{ ansible_os_family }}.yml"
+        - "vars/apache_default.yml"
+
+    - name: Add DNS servers to resolv.conf
+      lineinfile:
+        path: /etc/resolv.conf
+        state: present
+        line: |
+          nameserver 8.8.8.8
+          nameserver 1.1.1.1
+        create: yes
+
+    - name: Ensure NetworkManager DNS is configured
+      lineinfile:
+        path: /etc/NetworkManager/NetworkManager.conf
+        state: present
+        regexp: '^dns'
+        line: 'dns=default'
+        create: yes
+
+  tasks:
+    - name: Ensure Apache is installed
+      package:
+        name: "{{ apache_package }}"
+        state: present
+        update_cache: yes
+      register: apt_result
+      until: apt_result is succeeded
+      retries: 5
+      delay: 10
+
+    - name: Copy test config file
+      copy:
+        src: files/test.conf
+        dest: "{{ apache_config_dir }}/test.conf"
+      notify:
+        - restart apache
+
+    - name: Ensure Apache is running and starts at boot
+      service:
+        name: "{{ apache_service }}"
+        state: started
+        enabled: true

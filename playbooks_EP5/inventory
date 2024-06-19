@@ -1,0 +1,13 @@
+[ubuntu]
+192.168.229.142
+
+[ubuntu:vars]
+ansible_user=vagrant
+ansible_private_key_file=~/.vagrant.d/insecure_private_key
+
+[centos]
+192.168.229.141
+
+[centos:vars]
+ansible_user=vagrant
+ansible_private_key_file=~/.vagrant.d/insecure_private_key
