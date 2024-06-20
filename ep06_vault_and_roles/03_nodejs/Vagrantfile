@@ -1,0 +1,22 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+VAGRANTFILE_API_VERSION = "2"
+
+Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
+  config.vm.box = "generic/centos8"
+  config.vm.hostname = "nodejs.test"
+  config.ssh.insert_key = false
+  config.vm.synced_folder ".", "/vagrant", disabled: true
+
+  config.vm.provider "vmware_desktop" do |v|
+    v.memory = 256
+  end
+
+  # Not working on WSL
+  # Ansible provisioner.
+  # config.vm.provision "ansible" do |ansible|
+  #   ansible.playbook = "main.yml"
+  # end
+
+end

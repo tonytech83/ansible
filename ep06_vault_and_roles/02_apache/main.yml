@@ -1,0 +1,24 @@
+---
+- name: Install Apache.
+  hosts: all
+  become: true
+
+  handlers:
+    - import_tasks: handlers/apache.yml
+
+  pre_tasks:
+    - name: Debug OS Family
+      debug:
+        # ansible_os_family can be taken with `ansible -i inventory centos -m setup`
+        var: ansible_os_family
+
+    - name: Load variable files
+      include_vars: "{{ item }}"
+      with_first_found:
+        - "vars/apache_{{ ansible_os_family }}.yml"
+        - "vars/apache_default.yml"
+
+  tasks:
+    - import_tasks: tasks/apache.yml
+
+- import_playbook: date.yml

@@ -1,0 +1,8 @@
+---
+- name: Show date
+  hosts: all
+  become: true
+
+  tasks:
+    - name: Show the date.
+      command: date
