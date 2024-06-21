@@ -1,5 +1,5 @@
 [solr]
-192.168.229.137
+192.168.229.147
 
 [solr:vars]
 ansible_user=vagrant
