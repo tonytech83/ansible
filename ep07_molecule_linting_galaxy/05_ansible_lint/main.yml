@@ -1,0 +1,15 @@
+---
+- name: Test playbook checked for probles with ansible-lint
+  hosts: localhost
+  gather_facts: false
+  connection: local
+
+  tasks:
+    - name: Get system uptime to demo how this works.
+      ansible.legacy.command: uptime
+      changed_when: false
+      register: system_uptime
+
+    - name: Print the register output of the 'uptime' command.
+      ansible.legacy.debug:
+        var: system_uptime.stdout
