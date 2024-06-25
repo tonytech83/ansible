@@ -14,6 +14,7 @@ platforms:
     volumes:
       - /sys/fs/cgroup:/sys/fs/cgroup:rw
     cgroupns_mode: host
+    # Use `privileged: true` only for good known software.
     privileged: true
     pre_build_image: true
 provisioner:
