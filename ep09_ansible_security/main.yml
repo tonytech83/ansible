@@ -1,0 +1,110 @@
+---
+- hosts: centos
+  become: true
+
+  pre_tasks:
+    - name: Install policycoreutils-python
+      ansible.builtin.yum:
+        name: policycoreutils-python
+        state: present
+
+    - name: Allow SSH port in the firewall
+      ansible.posix.firewalld:
+        port: 2849/tcp
+        permanent: true
+        state: enabled
+      notify: reload firewall
+
+  handlers:
+    - name: restart ssh
+      ansible.builtin.service:
+        name: sshd
+        state: restarted
+
+    - name: reload firewall
+      ansible.builtin.command:
+        cmd: firewall-cmd --reload
+
+  tasks:
+    # Use secure and encrypted communication.
+    - name: Tell SELinux about SSH's new port.
+      ansible.builtin.seport:
+        ports: 2849
+        proto: tcp
+        setype: ssh_port_t
+        state: present
+
+    - name: Make sure SSH is more secure.
+      ansible.builtin.lineinfile:
+        dest: /etc/ssh/sshd_config
+        regexp: "{{ item.regexp }}"
+        line: "{{ item.line }}"
+        state: present
+        validate: "sshd -T -f %s"
+      with_items:
+        - regexp: "^PasswordAuthentication"
+          line: "PasswordAuthentication no"
+        - regexp: "^PermitRootLogin"
+          line: "PermitRootLogin no"
+        - regexp: "^Port"
+          line: "Port 2849"
+      notify: restart ssh
+
+    # User account configuration.
+    - name: Add user johndoe.
+      user:
+        name: johndoe
+        state: present
+
+    # Disable root login and use `sudo`.
+    - name: Add sudo group rights for deploymnet user.
+      ansible.builtin.lineinfile:
+        dest: /etc/sudoers
+        regexp: "^johndoe"
+        line: "johndoe ALL=(ALL) NOPASSWD: ALL"
+        state: present
+        validate: "visudo -cf %s"
+
+    # Remove unused software, open only required ports.
+    - name: Remove unused packages.
+      package:
+        name:
+        - httpd
+        - nano
+        - mailutils
+        state: absent
+
+    # Automating updates for RHEL (CentOS 7).
+    - name: Set up autoupdates.
+      yum:
+        name: yum-cron
+        state: present
+
+    - name: Ensure auto updtes are running.
+      service:
+        name: yum-cron
+        state: started
+        enabled: true
+
+    # Install and configuring a firewall with `firewalld` on RHEL.
+    - name: Install firewalld.
+      package:
+        name: firewalld
+        state: present
+
+    - name: Ensure firewalld is running.
+      service:
+        name: firewalld
+        state: started
+        enabled: true
+
+    - name: Configure ports in firewalld.
+      firewalld:
+        state: "{{ item.state }}"
+        port: "{{ item.port }}"
+        immediate: true
+        permanent: true
+      with_items:
+        - { state: enabled, port: 2849/tcp }
+        - { state: enabled, port: 123/udp }
+      notify: reload firewall
